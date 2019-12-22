@@ -256,20 +256,21 @@ void BTFTypeStruct::completeType(BTFDebug &BDebug) {
   // Add struct/union members.
   const DINodeArray Elements = STy->getElements();
   for (const auto *Element : Elements) {
-    struct BTF::BTFMember BTFMember;
-    const auto *DDTy = cast<DIDerivedType>(Element);
+    if (const auto *DDTy = dyn_cast<DIDerivedType>(Element)) {
+      struct BTF::BTFMember BTFMember;
 
-    BTFMember.NameOff = BDebug.addString(DDTy->getName());
-    if (HasBitField) {
-      uint8_t BitFieldSize = DDTy->isBitField() ? DDTy->getSizeInBits() : 0;
-      BTFMember.Offset = BitFieldSize << 24 | DDTy->getOffsetInBits();
-    } else {
-      BTFMember.Offset = DDTy->getOffsetInBits();
+      BTFMember.NameOff = BDebug.addString(DDTy->getName());
+      if (HasBitField) {
+        uint8_t BitFieldSize = DDTy->isBitField() ? DDTy->getSizeInBits() : 0;
+        BTFMember.Offset = BitFieldSize << 24 | DDTy->getOffsetInBits();
+      } else {
+        BTFMember.Offset = DDTy->getOffsetInBits();
+      }
+      const auto *BaseTy = DDTy->getBaseType();
+      BTFMember.Type = BDebug.getTypeId(BaseTy);
+      MemberTypeNoQual.push_back(BDebug.getTypeId(stripQualifiers(BaseTy)));
+      Members.push_back(BTFMember);
     }
-    const auto *BaseTy = DDTy->getBaseType();
-    BTFMember.Type = BDebug.getTypeId(BaseTy);
-    MemberTypeNoQual.push_back(BDebug.getTypeId(stripQualifiers(BaseTy)));
-    Members.push_back(BTFMember);
   }
 }
 
@@ -487,10 +488,11 @@ void BTFDebug::visitStructType(const DICompositeType *CTy, bool IsStruct,
   // Check whether we have any bitfield members or not
   bool HasBitField = false;
   for (const auto *Element : Elements) {
-    auto E = cast<DIDerivedType>(Element);
-    if (E->isBitField()) {
-      HasBitField = true;
-      break;
+    if (auto E = dyn_cast<DIDerivedType>(Element)) {
+      if (E->isBitField()) {
+        HasBitField = true;
+        break;
+      }
     }
   }
 
@@ -500,8 +502,11 @@ void BTFDebug::visitStructType(const DICompositeType *CTy, bool IsStruct,
   TypeId = addType(std::move(TypeEntry), CTy);
 
   // Visit all struct members.
-  for (const auto *Element : Elements)
-    visitTypeEntry(cast<DIDerivedType>(Element));
+  for (const auto *Element : Elements) {
+    if (auto E = dyn_cast<DIDerivedType>(Element)) {
+      visitTypeEntry(E);
+    } 
+  }
 }
 
 void BTFDebug::visitArrayType(const DICompositeType *CTy, uint32_t &TypeId) {
@@ -683,10 +688,11 @@ void BTFDebug::visitMapDefType(const DIType *Ty, uint32_t &TypeId) {
   const DINodeArray Elements = CTy->getElements();
   bool HasBitField = false;
   for (const auto *Element : Elements) {
-    auto E = cast<DIDerivedType>(Element);
-    if (E->isBitField()) {
-      HasBitField = true;
-      break;
+    if (auto E = dyn_cast<DIDerivedType>(Element)) {
+      if (E->isBitField()) {
+        HasBitField = true;
+        break;
+      }
     }
   }
 
@@ -697,8 +703,9 @@ void BTFDebug::visitMapDefType(const DIType *Ty, uint32_t &TypeId) {
 
   // Visit all struct members
   for (const auto *Element : Elements) {
-    const auto *MemberType = cast<DIDerivedType>(Element);
-    visitTypeEntry(MemberType->getBaseType());
+    if (const auto *MemberType = dyn_cast<DIDerivedType>(Element)) {
+      visitTypeEntry(MemberType->getBaseType());
+    }
   }
 }
 

@@ -293,7 +293,7 @@ void OutputSection::finalize() {
     return;
   }
 
-  if (!config->copyRelocs || (type != SHT_RELA && type != SHT_REL))
+  if (!(config->copyRelocs || config->emachine == EM_BPF) || (type != SHT_RELA && type != SHT_REL))
     return;
 
   if (isa<SyntheticSection>(first))

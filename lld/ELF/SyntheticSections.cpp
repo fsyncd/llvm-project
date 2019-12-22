@@ -3121,7 +3121,7 @@ bool ARMExidxSyntheticSection::addSection(InputSection *isec) {
   // and we would have to erase at a late stage relocations from merged entries.
   // Given that exception tables are already position independent and a binary
   // analyzer could derive the relocations we choose to erase the relocations.
-  if (config->emitRelocs && isec->type == SHT_REL)
+  if ((config->emitRelocs || config->emachine == EM_BPF) && isec->type == SHT_REL)
     if (InputSectionBase *ex = isec->getRelocatedSection())
       if (isa<InputSection>(ex) && ex->type == SHT_ARM_EXIDX)
         return true;

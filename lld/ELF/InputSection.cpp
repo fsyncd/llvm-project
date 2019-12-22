@@ -911,6 +911,11 @@ void InputSectionBase::relocate(uint8_t *buf, uint8_t *bufEnd) {
 void InputSectionBase::relocateAlloc(uint8_t *buf, uint8_t *bufEnd) {
   assert(flags & SHF_ALLOC);
   const unsigned bits = config->wordsize * 8;
+  
+  // BPF target delegates relocations to the loader
+  if (config->emachine == EM_BPF) {
+    return;
+  }
 
   for (const Relocation &rel : relocations) {
     uint64_t offset = rel.offset;

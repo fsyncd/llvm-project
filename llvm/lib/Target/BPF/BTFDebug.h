@@ -356,8 +356,11 @@ public:
   /// Get the type id for a particular DIType.
   uint32_t getTypeId(const DIType *Ty) {
     assert(Ty && "Invalid null Type");
-    assert(DIToIdMap.find(Ty) != DIToIdMap.end() &&
-           "DIType not added in the BDIToIdMap");
+    if (DIToIdMap.find(Ty) == DIToIdMap.end()) {
+      // We shouldn't be reaching this path but rust introduces some types
+      // that interfere with BTF generation
+      return 0;
+    }
     return DIToIdMap[Ty];
   }
 

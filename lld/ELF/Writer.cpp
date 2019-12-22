@@ -570,7 +570,7 @@ template <class ELFT> void Writer<ELFT>::run() {
   if (config->discard != DiscardPolicy::All)
     copyLocalSymbols();
 
-  if (config->copyRelocs)
+  if (config->copyRelocs || config->emachine == EM_BPF)
     addSectionSymbols();
 
   // Now that we have a complete set of output sections. This function
@@ -652,6 +652,11 @@ static bool shouldKeepInSymtab(const Defined &sym) {
   if (config->discard == DiscardPolicy::None)
     return true;
 
+  // BPF target delegates linking to the loader, therefore we need to retain symbols
+  SectionBase *sec = sym.section;
+  if (config->emachine == EM_BPF && sec && sec->flags & SHF_ALLOC)
+    return true;
+
   // If -emit-reloc is given, all symbols including local ones need to be
   // copied because they may be referenced by relocations.
   if (config->emitRelocs)
@@ -670,7 +675,6 @@ static bool shouldKeepInSymtab(const Defined &sym) {
   if (config->discard == DiscardPolicy::Locals)
     return false;
 
-  SectionBase *sec = sym.section;
   return !sec || !(sec->flags & SHF_MERGE);
 }
 

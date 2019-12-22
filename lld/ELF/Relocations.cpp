@@ -870,6 +870,7 @@ static void addRelativeReloc(InputSectionBase *isec, uint64_t offsetInSec,
     part.relrDyn->relocs.push_back({isec, offsetInSec});
     return;
   }
+  
   part.relaDyn->addReloc(target->relativeRel, isec, offsetInSec, sym, addend,
                          expr, type);
 }
@@ -951,6 +952,11 @@ template <class ELFT, class RelTy>
 static void processRelocAux(InputSectionBase &sec, RelExpr expr, RelType type,
                             uint64_t offset, Symbol &sym, const RelTy &rel,
                             int64_t addend) {
+  // BPF target delegates relocations to the loader
+  if (config->emachine == EM_BPF) {
+    return;
+  }
+  
   // If the relocation is known to be a link-time constant, we know no dynamic
   // relocation will be created, pass the control to relocateAlloc() or
   // relocateNonAlloc() to resolve it.
@@ -996,7 +1002,7 @@ static void processRelocAux(InputSectionBase &sec, RelExpr expr, RelType type,
       return;
     }
   }
-
+  
   if (!canWrite && (config->isPic && !isRelExpr(expr))) {
     error(
         "can't create dynamic relocation " + toString(type) + " against " +

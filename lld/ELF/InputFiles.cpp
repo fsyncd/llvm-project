@@ -946,7 +946,7 @@ InputSectionBase *ObjFile<ELFT>::createInputSection(const Elf_Shdr &sec) {
     // from the output, so returning `nullptr` for the normal case.
     // However, if -emit-relocs is given, we need to leave them in the output.
     // (Some post link analysis tools need this information.)
-    if (config->emitRelocs) {
+    if (config->emitRelocs || config->emachine == EM_BPF) {
       InputSection *relocSec = make<InputSection>(*this, sec, name);
       // We will not emit relocation section if target was discarded.
       target->dependentSections.push_back(relocSec);
