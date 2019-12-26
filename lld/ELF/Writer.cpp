@@ -197,6 +197,25 @@ template <class ELFT> static void combineEhSections() {
   v.erase(std::remove(v.begin(), v.end(), nullptr), v.end());
 }
 
+// TODO in the future implement a merge strategy for BTF information
+template <class ELFT> static void stripBTFSections() {
+  for (InputSectionBase *&s : inputSections) {
+    // Ignore dead sections and the partition end marker (.part.end),
+    // whose partition number is out of bounds.
+    if (!s->isLive() || s->partition == 255)
+      continue;
+
+    if (auto *btfs = dyn_cast<BTFInputSection>(s)) {
+      s = nullptr;
+    } else if (auto *btfs = dyn_cast<BTFExtensionInputSection>(s)) {
+      s = nullptr;
+    }
+  }
+
+  std::vector<InputSectionBase *> &v = inputSections;
+  v.erase(std::remove(v.begin(), v.end(), nullptr), v.end());
+}
+
 static Defined *addOptionalRegular(StringRef name, SectionBase *sec,
                                    uint64_t val, uint8_t stOther = STV_HIDDEN,
                                    uint8_t binding = STB_GLOBAL) {
@@ -557,6 +576,10 @@ template <class ELFT> void Writer<ELFT>::run() {
   // output sections in the usual way.
   if (!config->relocatable)
     combineEhSections<ELFT>();
+
+  // Merging BTF sections is not yet supported, therefore strip any BTF sections found
+  // TODO implement support for BTF merging
+  stripBTFSections<ELFT>();
 
   // We want to process linker script commands. When SECTIONS command
   // is given we let it create sections.

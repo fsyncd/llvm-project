@@ -173,6 +173,8 @@ uint64_t SectionBase::getOffset(uint64_t offset) const {
   }
   case Regular:
   case Synthetic:
+  case BTF:
+  case BTFExtension:
     return cast<InputSection>(this)->getOffset(offset);
   case EHFrame:
     // The file crtbeginT.o has relocations pointing to the start of an empty
@@ -1298,6 +1300,18 @@ uint64_t MergeInputSection::getParentOffset(uint64_t offset) const {
   return piece.outputOff + addend;
 }
 
+template <class ELFT>
+BTFInputSection::BTFInputSection(ObjFile<ELFT> &f,
+                               const typename ELFT::Shdr &header,
+                               StringRef name)
+        : InputSectionBase(f, header, name, InputSectionBase::BTF) {}
+
+template <class ELFT>
+BTFExtensionInputSection::BTFExtensionInputSection(ObjFile<ELFT> &f,
+                               const typename ELFT::Shdr &header,
+                               StringRef name)
+        : InputSectionBase(f, header, name, InputSectionBase::BTFExtension) {}
+
 template InputSection::InputSection(ObjFile<ELF32LE> &, const ELF32LE::Shdr &,
                                     StringRef);
 template InputSection::InputSection(ObjFile<ELF32BE> &, const ELF32BE::Shdr &,
@@ -1333,6 +1347,24 @@ template EhInputSection::EhInputSection(ObjFile<ELF32BE> &,
 template EhInputSection::EhInputSection(ObjFile<ELF64LE> &,
                                         const ELF64LE::Shdr &, StringRef);
 template EhInputSection::EhInputSection(ObjFile<ELF64BE> &,
+                                        const ELF64BE::Shdr &, StringRef);
+
+template BTFInputSection::BTFInputSection(ObjFile<ELF32LE> &,
+                                        const ELF32LE::Shdr &, StringRef);
+template BTFInputSection::BTFInputSection(ObjFile<ELF32BE> &,
+                                        const ELF32BE::Shdr &, StringRef);
+template BTFInputSection::BTFInputSection(ObjFile<ELF64LE> &,
+                                        const ELF64LE::Shdr &, StringRef);
+template BTFInputSection::BTFInputSection(ObjFile<ELF64BE> &,
+                                        const ELF64BE::Shdr &, StringRef);
+
+template BTFExtensionInputSection::BTFExtensionInputSection(ObjFile<ELF32LE> &,
+                                        const ELF32LE::Shdr &, StringRef);
+template BTFExtensionInputSection::BTFExtensionInputSection(ObjFile<ELF32BE> &,
+                                        const ELF32BE::Shdr &, StringRef);
+template BTFExtensionInputSection::BTFExtensionInputSection(ObjFile<ELF64LE> &,
+                                        const ELF64LE::Shdr &, StringRef);
+template BTFExtensionInputSection::BTFExtensionInputSection(ObjFile<ELF64BE> &,
                                         const ELF64BE::Shdr &, StringRef);
 
 template void EhInputSection::split<ELF32LE>();

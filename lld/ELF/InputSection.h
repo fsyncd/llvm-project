@@ -39,7 +39,7 @@ extern std::vector<Partition> partitions;
 // sections.
 class SectionBase {
 public:
-  enum Kind { Regular, EHFrame, Merge, Synthetic, Output };
+  enum Kind { Regular, EHFrame, Merge, Synthetic, Output, BTF, BTFExtension };
 
   Kind kind() const { return (Kind)sectionKind; }
 
@@ -316,6 +316,24 @@ public:
   std::vector<EhSectionPiece> pieces;
 
   SyntheticSection *getParent() const;
+};
+
+// This corresponds to the .BTF section of an input file
+class BTFInputSection : public InputSectionBase {
+public:
+  template <class ELFT>
+  BTFInputSection(ObjFile<ELFT> &f, const typename ELFT::Shdr &header,
+                 StringRef name);
+  static bool classof(const SectionBase *s) { return s->kind() == BTF; }
+};
+
+// This corresponds to the .BTF.ext section of an input file
+class BTFExtensionInputSection : public InputSectionBase {
+public:
+  template <class ELFT>
+  BTFExtensionInputSection(ObjFile<ELFT> &f, const typename ELFT::Shdr &header,
+                  StringRef name);
+  static bool classof(const SectionBase *s) { return s->kind() == BTFExtension; }
 };
 
 // This is a section that is added directly to an output section

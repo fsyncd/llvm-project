@@ -1030,6 +1030,12 @@ InputSectionBase *ObjFile<ELFT>::createInputSection(const Elf_Shdr &sec) {
   if (name == ".eh_frame" && !config->relocatable)
     return make<EhInputSection>(*this, sec, name);
 
+  if (name == ".BTF")
+    return make<BTFInputSection>(*this, sec, name);
+
+  if (name == ".BTF.ext")
+    return make<BTFExtensionInputSection>(*this, sec, name);
+
   if (shouldMerge(sec))
     return make<MergeInputSection>(*this, sec, name);
   return make<InputSection>(*this, sec, name);
